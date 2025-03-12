@@ -18,11 +18,15 @@ func NewClientHandler(service service.ClientService) *ClientHandler {
 }
 
 func (h *ClientHandler) CreateClientHandler(w http.ResponseWriter, r *http.Request) {
+	companyID := r.PathValue("id")
+
 	var client model.Client
 	if err := json.NewDecoder(r.Body).Decode(&client); err != nil {
 		http.Error(w, "Error in the payload", http.StatusBadRequest)
 		return
 	}
+
+	client.CompanyID = companyID
 
 	if err := h.service.CreateClient(&client); err != nil {
 		http.Error(w, fmt.Sprintf("Faield to create client: %v", err), http.StatusBadRequest)
@@ -69,6 +73,7 @@ func (h *ClientHandler) UpdateClientHandler(w http.ResponseWriter, r *http.Reque
 	var newClient model.Client
 	if err := json.NewDecoder(r.Body).Decode(&newClient); err != nil {
 		http.Error(w, fmt.Sprintf("failed to decode payload: %v", err), http.StatusBadRequest)
+		return
 	}
 
 	updated, err := h.service.UpdateClient(id, &newClient)

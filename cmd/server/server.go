@@ -22,19 +22,38 @@ func New(addr string) *Server {
 
 	initErr := database.Init()
 	if initErr != nil {
-		log.Fatal(err)
+		log.Fatal(initErr)
 	}
+	companyRepo := repository.NewCompanyRepo(database)
+	companyService := service.NewCompanyService(companyRepo)
+	companyHandler := handler.NewCompanyHandler(companyService)
 
-	clientRepo := repository.NewClientRepo(database)
+	clientRepo := repository.NewClientRepo(database, companyRepo)
 	clientService := service.NewClientService(clientRepo)
 	clientHandler := handler.NewClientHandler(clientService)
 
+	serviceRepo := repository.NewServiceRepo(database)
+	serviceService := service.NewServiceService(serviceRepo)
+	serviceHandler := handler.NewServiceHandler(serviceService)
+
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /clients", clientHandler.CreateClientHandler)
+	mux.HandleFunc("POST /companies/{id}/clients", clientHandler.CreateClientHandler)
 	mux.HandleFunc("GET /clients", clientHandler.GetAllClientsHandler)
 	mux.HandleFunc("GET /clients/{id}", clientHandler.GetClientByIdHandler)
 	mux.HandleFunc("PUT /clients/{id}", clientHandler.UpdateClientHandler)
 	mux.HandleFunc("DELETE /clients/{id}", clientHandler.DeleteCollectionHandler)
+
+	mux.HandleFunc("POST /companies", companyHandler.CreateCompanyHandler)
+	mux.HandleFunc("GET /companies", companyHandler.GetAllCompaniesHandler)
+	mux.HandleFunc("GET /companies/{id}", companyHandler.GetCompanyByIdHandler)
+	mux.HandleFunc("PUT /companies/{id}", companyHandler.UpdateCompanyHandler)
+	mux.HandleFunc("DELETE /companies/{id}", companyHandler.DeleteCollectionHandler)
+
+	mux.HandleFunc("POST /services", serviceHandler.CreateServiceHandler)
+	mux.HandleFunc("GET /services", serviceHandler.GetAllServicesHandler)
+	mux.HandleFunc("GET /services/{id}", serviceHandler.GetServiceByIdHandler)
+	mux.HandleFunc("PUT /services/{id}", serviceHandler.UpdateServiceHandler)
+	mux.HandleFunc("DELETE /services/{id}", serviceHandler.DeleteCollectionHandler)
 
 	s := &Server{httpServer: &http.Server{
 		Addr:    addr,

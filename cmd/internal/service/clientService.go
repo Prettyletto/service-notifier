@@ -58,6 +58,7 @@ func (s *clientService) UpdateClient(id string, client *model.Client) (*model.Cl
 	if err != nil {
 		return nil, err
 	}
+
 	return client, err
 }
 

@@ -17,14 +17,23 @@ type ClientRepository interface {
 }
 
 type clientRepository struct {
-	database *db.DataBase
+	database          *db.DataBase
+	companyRepository CompanyRepository
 }
 
-func NewClientRepo(database *db.DataBase) ClientRepository {
-	return &clientRepository{database: database}
+func NewClientRepo(database *db.DataBase, companyRepo CompanyRepository) ClientRepository {
+	return &clientRepository{database: database, companyRepository: companyRepo}
 }
 
 func (r *clientRepository) SaveClient(client *model.Client) error {
+	exists, exterr := r.companyRepository.Exists(client.CompanyID)
+	if exterr != nil {
+		return exterr
+	}
+	if !exists {
+		return fmt.Errorf("company with id %s doesn't exists", client.CompanyID)
+	}
+
 	excStmt := `INSERT INTO client (id,name,dob,email,phone,address,company_id) VALUES(?,?,?,?,?,?,?)`
 
 	_, err := r.database.DB.Exec(excStmt,
@@ -86,8 +95,8 @@ func (r *clientRepository) FindClientById(id string) (*model.Client, error) {
 }
 
 func (r *clientRepository) UpdateClient(id string, client *model.Client) error {
-	query := `UPDATE client SET name = ?, dob = ?,email = ?, phone = ?, address =?  WHERE id = ?`
-	result, err := r.database.DB.Exec(query, client.Name, client.DOB, client.Phone, client.Address, id)
+	query := `UPDATE client SET name = ?, dob = ?,email = ?, phone = ?, address = ?, company_id = ? WHERE id = ?`
+	result, err := r.database.DB.Exec(query, client.Name, client.DOB, client.Email, client.Phone, client.Address, client.CompanyID, id)
 	if err != nil {
 		return fmt.Errorf("failed to update client")
 	}
